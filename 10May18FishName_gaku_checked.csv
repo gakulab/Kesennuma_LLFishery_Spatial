@@ -1,0 +1,48 @@
+Species_Num,Species_NameJ,Species_Name,,,
+1,め　か,Swordfish,,Swordfish_value,Swordfish.y
+2,小めか,Swordfish_Small,,Swordfish_Small_value,Swordfish_Small.y
+3,かつお,Skip_Jack,,Skip_Jack_value,Skip_Jack.y
+4,ば　ち,Big_Eye,,Big_Eye_value,Big_Eye.y
+5,びんなが,Allbacore,,Allbacore_value,Allbacore.y
+6,きはだ,Yellowfin,,Yellowfin_value,Yellowfin.y
+7,しいら,Dolphinfish,,Dolphinfish_value,Dolphinfish.y
+8,だるま,Big_Eye_Small,,Big_Eye_Small_value,Big_Eye_Small.y
+9,ま　か,Striped_Marlin,,Striped_Marlin_value,Striped_Marlin.y
+10,まぐろ,Bluefin,,Bluefin_value,Bluefin.y
+11,金　鯛,Opah,,Opah_value,Opah.y
+12,勝さめ,Shortfin_Mako_Shark,,Shortfin_Mako_Shark_value,Shortfin_Mako_Shark.y
+13,毛鹿さめ,Salmon_shark,,Salmon_shark_value,Salmon_shark.y
+14,毛鹿の星,Salmon_shark_hoshi,,Salmon_shark_hoshi_value,Salmon_shark_hoshi.y
+15,尾長さめ,Thresher_shark,,Thresher_shark_value,Thresher_shark.y
+16,吉　切,Blue_Shark,,Blue_Shark_value,Blue_Shark.y
+17,さわら,Japanese_Spanish_mackerel,,Japanese_Spanish_mackerel_value,Japanese_Spanish_mackerel.y
+18,その他のかじき,Other_billfish,,Other_billfish_value,Other_billfish.y
+19,ピ　ア,Pacific_pomfret,,Pacific_pomfret_value,Pacific_pomfret.y
+20,ヒ　レ,Fin,,Fin_value,Fin.y
+21,羽　生,Indo_Pacific_sailfish,,Indo_Pacific_sailfish_value,Indo_Pacific_sailfish.y
+22,化さめ,Longfin_mako_shark,,Longfin_mako_shark_value,Longfin_mako_shark.y
+23,虎さめ,Cloudy_Catshark,,Cloudy_Catshark_value,Cloudy_Catshark.y
+24,黒　鯛,Sea_bream,,Sea_bream_value,Sea_bream.y
+25,黒　皮,Indo_Pacific_blue_marlin,,Indo_Pacific_blue_marlin_value,Indo_Pacific_blue_marlin.y
+26,杉　山,Shortbill_spearfish,,Shortbill_spearfish_value,Shortbill_spearfish.y
+27,丁さめ,Smooth_hammerhead,,Smooth_hammerhead_value,Smooth_hammerhead.y
+28,白　皮,Black_marlin,,Black_marlin_value,Black_marlin.y
+29,平　政,Yellowtail_amberjack,,Yellowtail_amberjack_value,Yellowtail_amberjack.y
+30,平　頭,Milk_shark,,Milk_shark_value,Milk_shark.y
+31,目白さめ,Bull_Shark,,Bull_Shark_value,Bull_Shark.y
+32,あ　じ,Jack_mackerels,,Jack_mackerels_value,Jack_mackerels.y
+33,いなだ,Japanese_amberjack,,Japanese_amberjack_value,Japanese_amberjack.y
+34,ごまさば,Blue_mackerel,,Blue_mackerel_value,Blue_mackerel.y
+35,さ　ば,Mackerel,,Mackerel_value,Mackerel.y
+36,するめいか,Japanese_flying_squid,,Japanese_flying_squid_value,Japanese_flying_squid.y
+37,やりいか,Spear_squid,,Spear_squid_value,Spear_squid.y
+38,わらさ,Middle_sized_amberjack,,Middle_sized_amberjack_value,Middle_sized_amberjack.y
+39,活ヒラメ,Bastard_halibut,,Bastard_halibut_value,Bastard_halibut.y
+40,込　魚,Iriuo,,Iriuo_value,Iriuo.y
+41,汐　子,Greater_amberjack,,Greater_amberjack_value,Greater_amberjack.y
+42,秋さけ,Autumn_salmon,,Autumn_salmon_value,Autumn_salmon.y
+43,真たこ,Common_octopus,,Common_octopus_value,Common_octopus.y
+44,万棒こわた,Ocean_sunfish_intestine,,Ocean_sunfish_intestine_value,Ocean_sunfish_intestine.y
+45,万棒正肉,Ocean_sunfish_meat,,Ocean_sunfish_meat_value,Ocean_sunfish_meat.y
+46,油さめ,Spiny_dogfish,,Spiny_dogfish_value,Spiny_dogfish.y
+47,消費税魚,NA,,,
