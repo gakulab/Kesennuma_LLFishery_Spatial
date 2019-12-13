@@ -33,44 +33,31 @@ library(ggsci)
 ##操業データの入力
 ```{r}
 #base_data
-if(User==1){data1<-read.csv("14Jun19_Operation_Data.2012_2018.sasaki.csv",
-                            stringsAsFactors=FALSE,header=T,na.strings="NULL")}else if 
-(User==2){data1<-read.csv("14Jun19_Operation_Data.2012_2018.sasaki.csv",
-                          stringsAsFactors=FALSE,header=T,na.strings="NULL",
-                          fileEncoding="UTF-8-BOM")}   
+data1<-read.csv("14Jun19_Operation_Data.2012_2018.sasaki.csv",
+                            stringsAsFactors=FALSE,header=T,na.strings="NULL")
 ```
 
 ##market_dataの入力
 ```{r}
-if(User==1){M_data1<-read.csv("kesennuma_market_20090401_20180331.csv",fileEncoding="CP932",
-                            stringsAsFactors=FALSE,header=T,skip=1,na.strings="NULL")}else if 
-(User==2){M_data1<- read_excel("NEW_kesennuma_market_20090401_20180331.xlsx")} 
+M_data1<-read.csv("kesennuma_market_20090401_20180331.csv",fileEncoding="CP932",
+                            stringsAsFactors=FALSE,header=T,skip=1,na.strings="NULL")
 
 #魚種の英名
-if(User==1){English_Names <- 
-  read.csv("10May18FishName_gaku_checked.csv",header=T,fileEncoding="CP932")}else if
-  (User==2){English_Names <-     
-    read_excel("3May19FishName.xlsx")}
+English_Names <- read.csv("10May18FishName_gaku_checked.csv",header=T,fileEncoding="CP932")
 ```
 
 ##Fukuyo_8におけるmarket_data入力
 ```{r}
-if(User==1){Fukuyo_data<-read.csv("6May19.Fukuyo_8.market_data.csv",fileEncoding="CP932",
-                            stringsAsFactors=FALSE,header=T,na.strings="NULL")}else if 
-(User==2){Fukuyo_data<-read.csv("6May19.Fukuyo_8.market_data.csv",
-                          stringsAsFactors=FALSE,header=T,na.strings="NULL",
-                          fileEncoding="UTF-8-BOM")} 
+Fukuyo_data<-read.csv("6May19.Fukuyo_8.market_data.csv",fileEncoding="CP932",
+                            stringsAsFactors=FALSE,header=T,na.strings="NULL")
 
 M_data1<- dplyr::bind_rows(M_data1,Fukuyo_data) #market_dataと結合
 ```
 
 ##漁船名セットの入力
 ```{r}
-if(User==1){Vessel_Name_Match<-read.csv("6May.19.Vessel_Name_Match.csv",fileEncoding="CP932",
-                            stringsAsFactors=FALSE,header=T,na.strings="NULL")}else if 
-(User==2){Vessel_Name_Match<-read.csv("6May.19.Vessel_Name_Match.csv",
-                          stringsAsFactors=FALSE,header=T,na.strings="NULL",
-                          fileEncoding="UTF-8-BOM")} 
+Vessel_Name_Match<-read.csv("6May.19.Vessel_Name_Match.csv",fileEncoding="CP932",
+                            stringsAsFactors=FALSE,header=T,na.strings="NULL")
 ```
 
 ##数値型(操業データ）への変換
