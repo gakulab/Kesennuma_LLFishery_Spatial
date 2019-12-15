@@ -5,59 +5,53 @@ date: "2019年5月1日"
 output: html_document
 ---
 
+##魚種構成に関するグラフを作成する
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+##パッケージの読み込み
 ```{r}
 rm(list = ls(all=TRUE))
-library(DT)
-library(raster)
-library(rgdal)
 library(dplyr)
 library(sp)
 library(tidyr)
 library(tidyverse)
-library(ggplot2)
-library(gridExtra)
-library(Rmisc)
-library(readxl)
-library(leaflet)
-library(geosphere)
-library(cluster)
-library(LICORS)
-library(scales)
-library(ggsci)
+library(ggplot2)          　
+library(gridExtra)　　#プロットのレイアウト
+library(geosphere)　　#2点間の距離を計算
+library(scales)       #棒グラフをパーセント表記にする
 ```
 
 ##操業データの入力
 ```{r}
 #base_data
-data1<-read.csv("14Jun19_Operation_Data.2012_2018.sasaki.csv",
-                            stringsAsFactors=FALSE,header=T,na.strings="NULL")
+data1<-read.csv("14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
 ```
 
 ##market_dataの入力
 ```{r}
-M_data1<-read.csv("kesennuma_market_20090401_20180331.csv",fileEncoding="CP932",
-                            stringsAsFactors=FALSE,header=T,skip=1,na.strings="NULL")
+#市況データ
+M_data1<-read.csv("kesennuma_market_20090401_20180331.csv",
+                  fileEncoding="CP932",stringsAsFactors=FALSE,header=T,
+                  skip=1,na.strings="NULL")                          
 
-#魚種の英名
+#魚種の英名セット
 English_Names <- read.csv("10May18FishName_gaku_checked.csv",header=T,fileEncoding="CP932")
 ```
 
 ##Fukuyo_8におけるmarket_data入力
 ```{r}
-Fukuyo_data<-read.csv("6May19.Fukuyo_8.market_data.csv",fileEncoding="CP932",
-                            stringsAsFactors=FALSE,header=T,na.strings="NULL")
+Fukuyo_data<-read.csv("6May19.Fukuyo_8.market_data.csv",
+                      fileEncoding="CP932",stringsAsFactors=FALSE,                         header=T,na.strings="NULL")
 
 M_data1<- dplyr::bind_rows(M_data1,Fukuyo_data) #market_dataと結合
 ```
 
 ##漁船名セットの入力
 ```{r}
-Vessel_Name_Match<-read.csv("6May.19.Vessel_Name_Match.csv",fileEncoding="CP932",
-                            stringsAsFactors=FALSE,header=T,na.strings="NULL")
+Vessel_Name_Match<-read.csv("6May.19.Vessel_Name_Match.csv",
+                            fileEncoding="CP932",stringsAsFactors=FALSE,                            header=T,na.strings="NULL")
 ```
 
 ##数値型(操業データ）への変換
@@ -182,6 +176,7 @@ M_data5[,75] <-round(M_data5[,75],0)
 
 ##列名（魚種名）の変換
 ```{r}
+#漁獲量
 M_data5<-dplyr::rename(M_data5,
 Swordfish_weight= Swordfish.x,
 Swordfish_Small_weight=	Swordfish_Small.x,
@@ -215,7 +210,7 @@ Yellowtail_amberjack_weight=	Yellowtail_amberjack.x,
 Milk_shark_weight=	Milk_shark.x,
 Bull_Shark_weight=	Bull_Shark.x,
 Ocean_sunfish_meat_weight=	Ocean_sunfish_meat.x,
-
+#漁獲高
 Swordfish_value=	Swordfish.y,
 Swordfish_Small_value=	Swordfish_Small.y,
 Skip_Jack_value=	Skip_Jack.y,
@@ -300,7 +295,6 @@ xy7.8<-cbind(data7.8$Longitude,data7.8$Latitude)
 xy9.10.11<-cbind(data9.10.11$Longitude,data9.10.11$Latitude)
 xy12<-cbind(data12$Longitude,data12$Latitude)
 ```
-
 
 ##気仙沼間の距離測定
 ##気仙沼から200km以内の操業を除去
@@ -554,204 +548,151 @@ data12<-data12 %>%
 ```
 
 
-##漁獲量・Mdata3
+##各クラスター数における漁獲量と漁獲高のヒストグラム作成
+###魚種構成データとクラスターデータを結合
 ```{r}
-M_data3$Fish_Names2 <- factor(M_data3$Fish_Names,
-                                     levels = c("Swordfish","Blue_Shark"))
-
-M_data7<-dplyr::filter(M_data3, Year_Landing ==2015) 
-w <- ggplot(M_data7,aes(x = Month_Landing, y = Weight_kg_sum/1000))
-w <- w + geom_bar(stat = "identity",aes(fill=Fish_Names2))
-w <- w + labs(x = "月", y = "漁獲量(t)", title = "月別の魚種構成")
-w <- w + scale_x_continuous(breaks = seq(1,12, by = 1)) +
-  theme_gray (base_family = "HiraKakuPro-W3")
-
-v <- ggplot(M_data7,aes(x = Month_Landing, y = Value_JPY_sum/1000000))
-v <- v + geom_bar(stat = "identity",aes(fill=Fish_Names2))
-v <- v + labs(x = "月", y = "漁獲高(百万円)", title = "月別の魚種構成")
-v <- v + scale_x_continuous(breaks = seq(1,12, by = 1))+
-  theme_gray (base_family = "HiraKakuPro-W3")
-  
-grid.arrange(w,v,ncol = 1)
-```
-
-
-
-
-##各クラスター数ごと(1.2月)
-```{r}
+#1.2月の月別データからクラスター情報を抽出
 M_data8<-dplyr::select(data1.2,"Year_Landing","Month_Landing",                       "Day_Landing","Vessel_Name","cluster2","cluster3","cluster4",
                        "B_cluster2","B_cluster3","B_cluster4")
-
 M_data8<-distinct(M_data8)#重複行の削除
 
+M_data3$Fish_Names2 <- factor(M_data3$Fish_Names,
+                      levels = c("Swordfish","Blue_Shark"))#魚種構成をグループ化
+
+#魚種構成データとクラスターデータを結合
 M_data9<-dplyr::left_join(M_data3,M_data8,by=c("Vessel_Name",
                         "Year_Landing","Month_Landing","Day_Landing"))
-M_data9<-M_data9[complete.cases(M_data9[ , 9:14]),]
-M_data9$Fish_Names2 <- as.character(M_data9$Fish_Names2)
 
-M_data10<-M_data9 %>% #重複行のカウント
+M_data9<-M_data9[complete.cases(M_data9[ , 9:14]),]#指定列のNA削除
+M_data9$Fish_Names2 <- as.character(M_data9$Fish_Names2)
+```
+
+##漁獲量と漁獲高の重複行をカウントし平均化
+```{r}
+#漁獲量・漁獲高の重複行をカウントし列生成
+M_data_count<-M_data9 %>% 
   dplyr::group_by(Year_Landing,Month_Landing,
                   Day_Landing,Vessel_Name,Fish_Names) %>%
   dplyr::count(Weight_kg_sum,Value_JPY_sum)
-
-M_data9<-dplyr::left_join(M_data9,M_data10,by=c("Vessel_Name",
+#カウント列を結合
+M_data9<-dplyr::left_join(M_data9,M_data_count,by=c("Vessel_Name",
                    "Fish_Names","Year_Landing","Month_Landing",
                    "Day_Landing","Weight_kg_sum","Value_JPY_sum"))
 
-M_data9<-M_data9 %>% #重複行の平均化
+M_data9<-M_data9 %>% #漁獲量と漁獲高の重複の平均化
   dplyr::group_by(Year_Landing,Month_Landing,
                   Day_Landing,Vessel_Name,Fish_Names) %>%
   dplyr::mutate(Weight_kg_sum = Weight_kg_sum/n,
                    Value_JPY_sum = Value_JPY_sum/n)
+```
 
+##魚種構成の内訳を記入
+```{r}
 M_data9$Fish_Names2[is.na(M_data9$Fish_Names2)] <- "other"
 M_data9$Fish_Names2 <- factor(M_data9$Fish_Names2,
                             levels = c("Swordfish","Blue_Shark","other"))
 ```
 
-##クラスター別の魚種構成
+##1.2月のクラスター別の魚種構成（棒グラム）
 ```{r}
 M_data9$cluster2 <- as.numeric(M_data9$cluster2)
+#クラスター数2で分類した漁獲量
 w <- ggplot(M_data9,aes(x = M_data9$cluster2, y = Weight_kg_sum/1000))
 w <- w + geom_bar(stat = "identity",aes(fill=Fish_Names2))
 w <- w + labs(x = "クラスター", y = "漁獲量(t)", 
-              title = "クラスター別の魚種構成")+
+              title = "クラスター別の漁獲量魚種構成")+
   theme(legend.position="none")
 w <- w + scale_x_continuous(breaks = seq(1,2, by = 1)) +
   theme_gray (base_family = "HiraKakuPro-W3")
 
+#クラスター数2で分類した漁獲高
 v <- ggplot(M_data9,aes(x = M_data9$cluster2, 
                         y = Value_JPY_sum/100000000))
 v <- v + geom_bar(stat = "identity",aes(fill=Fish_Names2))
 v <- v + labs(x = "クラスター", y = "漁獲高(億円)", 
-              title = "クラスター別の魚種構成")+
+              title = "クラスター別の漁獲高魚種構成")+
   theme(legend.position="none")
 v <- v + scale_x_continuous(breaks = seq(1,2, by = 1)) +
   theme_gray (base_family = "HiraKakuPro-W3")
 grid.arrange(w,v,ncol = 2)
 ```
 
+##1.2月のクラスター別の魚種構成（100％割合棒グラム）
 ```{r}
-w <- ggplot(M_data9,aes(x = M_data9$cluster3, y = Weight_kg_sum/1000))
-w <- w + geom_bar(stat = "identity",aes(fill=Fish_Names2))
-w <- w + labs(x = "クラスター", y = "漁獲量(t)", 
-              title = "クラスター別の魚種構成")
-w <- w + scale_x_continuous(breaks = seq(1,3, by = 1)) +
-  theme_gray (base_family = "HiraKakuPro-W3")
-  
-
-v <- ggplot(M_data9,aes(x = M_data9$cluster3, y = Value_JPY_sum/1000000))
-v <- v + geom_bar(stat = "identity",aes(fill=Fish_Names2))
-v <- v + labs(x = "クラスター", y = "漁獲高(百万円)", 
-              title = "クラスター別の魚種構成")
-v <- v + scale_x_continuous(breaks = seq(1,3, by = 1)) +
-  theme_gray (base_family = "HiraKakuPro-W3")
-  
-grid.arrange(w,v,ncol = 2)
-```
-
-
-```{r}
-M_data9$cluster4 <- as.numeric(M_data9$cluster4)
-w <- ggplot(M_data9,aes(x = M_data9$cluster4, y = Weight_kg_sum/1000))
+M_data9$cluster2 <- as.numeric(M_data9$cluster2)
+#クラスター数2で分類した漁獲量
+w <- ggplot(M_data9,aes(x = M_data9$cluster2, y = Weight_kg_sum/1000))
 w <- w + geom_bar(stat = "identity",aes(fill=Fish_Names2),
                   position = "fill")
 w <- w + labs(x = "クラスター", y = "漁獲量(%)", 
-              title = "クラスター別の魚種構成")+
+              title = "クラスター別の漁獲量魚種構成")+
   scale_y_continuous(labels = percent)
 w <- w + scale_x_continuous(breaks = seq(1,4, by = 1)) +
   theme_gray (base_family = "HiraKakuPro-W3")
 
-v <- ggplot(M_data9,aes(x = M_data9$cluster4, y = Value_JPY_sum/1000000))
+#クラスター数2で分類した漁獲高
+v <- ggplot(M_data9,aes(x = M_data9$cluster2, y = Value_JPY_sum/1000000))
 v <- v + geom_bar(stat = "identity",aes(fill=Fish_Names2),
                   position = "fill")
 v <- v + labs(x = "クラスター", y = "漁獲高(%)", 
-              title = "クラスター別の魚種構成")+
+              title = "クラスター別の漁獲高魚種構成")+
   scale_y_continuous(labels = percent)
 v <- v + scale_x_continuous(breaks = seq(1,4, by = 1)) +
   theme_gray (base_family = "HiraKakuPro-W3")
 grid.arrange(w,v,ncol = 2)
 ```
 
+##1.2月におけるクラスター別の密度表記ヒストグラムと密度曲線(漁獲量)
+##x軸を対数軸で表記
 ```{r}
 M_data9$cluster2 <- as.character(M_data9$cluster2)
 g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
                          fill = cluster2))
-g <- g + geom_histogram(position = "identity", alpha = 0.8)
-g <- g + geom_density(aes(color =cluster2, alpha = 0.2),
-                      show.legend = F)+scale_x_log10()
+g <- g + geom_histogram(position = "identity", alpha = 0.8)#ヒストグラム
+#密度曲線,x軸を対数軸に変換 
+g <- g + geom_density(aes(color =cluster2, alpha = 0.2),show.legend=F)+                     　　　　scale_x_log10(breaks=10^(-3:2))
 g <- g + labs(x = "漁獲量(t)")+facet_grid(cluster2 ~ .)
-g <- g + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
+g <- g + theme_gray (base_family = "HiraKakuPro-W3")
   
 plot(g)
 ```
 
-
+##1.2月におけるクラスター別の頻度表記ヒストグラム（漁獲量）
+##y軸を対数軸で表記
 ```{r}
 M_data9$cluster2 <- as.character(M_data9$cluster2)
 g <- ggplot(ungroup(M_data9), aes(x = Weight_kg_sum/1000,fill = cluster2))
-g <- g + geom_histogram(position = "identity", alpha = 0.4)+scale_y_continuous(trans = "log1p")
-g <- g + scale_fill_npg()+ labs(x = "漁獲量(t)") +
-  theme_gray (base_family = "HiraKakuPro-W3")
-  
+g <- g + geom_histogram(position = "identity", 
+     alpha = 0.5)+scale_y_continuous(trans = "log1p")#y軸を対数軸に変換
+g <- g +  labs(x = "漁獲量(t)") +theme_gray (base_family = "HiraKakuPro-W3")
 plot(g)
 ```
 
-
+##1.2月におけるクラスター別の密度表記ヒストグラムと
+##密度曲線(漁獲量・漁獲高)
 ```{r}
 M_data9$cluster2 <- as.character(M_data9$cluster2)
+#クラスター数2で分類した漁獲量
 g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
                          fill = cluster2))
 g <- g + geom_histogram(position = "identity", alpha = 0.8)
 g <- g + geom_density(aes(color =cluster2, alpha = 0.2),
                       show.legend = F)
 g <- g + labs(x = "漁獲量(t)")
-g <- g + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
+g <- g + theme_gray (base_family = "HiraKakuPro-W3")
 
+#クラスター数2で分類した漁獲高
 g2 <- ggplot(M_data9, aes(x = Value_JPY_sum/10000,y = ..density..,
                          fill = cluster2))
 g2 <- g2 + geom_histogram(position = "identity", alpha = 0.8)
 g2 <- g2 + geom_density(aes(color =cluster2, alpha = 0.2),
                       show.legend = F)
 g2 <- g2 + labs(x = "漁獲高(万円)")
-g2 <- g2 + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
+g2 <- g2 + theme_gray (base_family = "HiraKakuPro-W3")
 grid.arrange(g,g2,ncol = 1)
 ```
 
-```{r}
-M_data9$cluster2 <- as.character(M_data9$cluster2)
-g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
-                         fill = cluster2))
-g <- g + geom_density(aes(color =cluster2, alpha = 0.2))
-g <- g + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
 
-g2 <- ggplot(M_data9, aes(x = Value_JPY_sum/10000,y = ..density..,
-                         fill = cluster2))
-g2 <- g2 + geom_density(aes(color =cluster2, alpha = 0.2))
-g2 <- g2 + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
-grid.arrange(g,g2,ncol = 1)
-```
 
-```{r}
-M_data9$cluster2 <- as.character(M_data9$cluster2)
-g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
-                         fill = cluster2))
-g <- g + geom_histogram(position = "dodge")
-g <- g + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
-
-g2 <- ggplot(M_data9, aes(x = Value_JPY_sum/10000,y = ..density..,
-                         fill = cluster2))
-g2 <- g2 + geom_histogram(position = "dodge")
-g2 <- g2 + scale_fill_npg()+ scale_color_npg()+
-  theme_gray (base_family = "HiraKakuPro-W3")
-grid.arrange(g,g2,ncol = 1)
-```
 
 
