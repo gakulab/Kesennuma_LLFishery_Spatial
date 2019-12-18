@@ -692,27 +692,6 @@ g2 <- g2 + theme_gray (base_family = "HiraKakuPro-W3")
 grid.arrange(g,g2,ncol = 1)
 ```
 
-```{r}
-M_data9$cluster2 <- as.character(M_data9$cluster2)
-#クラスター数2で分類した漁獲量
-g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
-                         fill = cluster2))
-g <- g + geom_histogram(position = "identity", alpha = 0.8)
-g <- g + geom_density(aes(color =cluster2, alpha = 0.2),
-                      show.legend = F)
-g <- g + labs(x = "漁獲量(t)")
-g <- g + theme_gray (base_family = "HiraKakuPro-W3")
-
-#クラスター数2で分類した漁獲高
-g2 <- ggplot(M_data9, aes(x = Value_JPY_sum/10000,y = ..density..,
-                         fill = cluster2))
-g2 <- g2 + geom_histogram(position = "identity", alpha = 0.8)
-g2 <- g2 + geom_density(aes(color =cluster2, alpha = 0.2),
-                      show.legend = F)
-g2 <- g2 + labs(x = "漁獲高(万円)")
-g2 <- g2 + theme_gray (base_family = "HiraKakuPro-W3")
-grid.arrange(g,g2,ncol = 1)
-```
 
 
 
