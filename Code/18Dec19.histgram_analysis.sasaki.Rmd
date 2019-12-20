@@ -26,13 +26,13 @@ library(scales)       #棒グラフをパーセント表記にする
 ##操業データの入力
 ```{r}
 #base_data
-data1<-read.csv("14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
+data1<-read.csv("Data/14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
 ```
 
 ##market_dataの入力
 ```{r}
 #市況データ
-M_data1<-read.csv("~/Kesennuma_LLFishery_Spatial/CSV_Data/Operation_Data/kesennuma_market_20090401_20180331.csv",
+M_data1<-read.csv("kesennuma_market_20090401_20180331.csv",
                   fileEncoding="CP932",stringsAsFactors=FALSE,header=T,
                   skip=1,na.strings="NULL")                          
 
