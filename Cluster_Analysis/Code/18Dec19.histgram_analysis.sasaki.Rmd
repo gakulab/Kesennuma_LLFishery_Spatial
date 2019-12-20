@@ -26,7 +26,8 @@ library(scales)       #棒グラフをパーセント表記にする
 ##操業データの入力
 ```{r}
 #base_data
-data1<-read.csv("Data/14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
+data1<-read.csv("Cluster_Analysis/Data/Operation_Data/
+                14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
 ```
 
 ##market_dataの入力
