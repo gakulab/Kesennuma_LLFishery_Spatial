@@ -1,0 +1,56 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#出港〜操業、操業〜帰港までの日数データフレーム作成
+```{r}
+#操業データ入力
+#Googleドライブ/GD_Kesennuma_LLFishery_Spatial/Project_Cluster_Analysis_Sasaki_2019/Kesennuma_LLFishery_Spatial/Data/Operation_Dataよりデータを入力
+
+data1<-
+  read.csv("Data/Operation_Data/14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
+```
+
+
+```{r}
+#水揚げ日、漁船名、操業列を抽出
+data2<-dplyr::select(data1,"Year_Landing","Month_Landing",
+              "Day_Landing","Vessel_Name","Operation_Number")
+data2$Year_Landing <- as.numeric(data2$Year_Landing)
+
+data2<-data2[complete.cases(data2[ , 1]),]#指定列のNA削除
+```
+
+
+```{r}
+#操業列から出港〜操業、操業〜帰港までの行抽出
+data2<-data2%>%
+  dplyr::filter(Operation_Number %in% c("Zokkou","Kikou"))
+
+#出港〜操業、操業〜帰港までの行（日数）をカウント
+data2<-data2 %>% 
+  dplyr::group_by(Year_Landing,Month_Landing,
+                  Day_Landing,Vessel_Name) %>%
+  dplyr::count(Operation_Number)
+```
+
+
+```{r}
+#出港〜操業の日数をカウントしたデータフレーム作成
+Syukkou<-data2%>%
+  dplyr::filter(Operation_Number == "Zokkou")%>%
+  dplyr::rename( Syukkou_days = n) 
+
+#操業〜帰港の日数をカウントしたデータフレーム作成
+Kikou<-data2%>%
+  dplyr::filter(Operation_Number == "Kikou")%>%
+  dplyr::rename( Kikou_days = n) 
+
+```
+

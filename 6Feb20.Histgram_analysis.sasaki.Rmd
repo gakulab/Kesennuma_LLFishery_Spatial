@@ -1,0 +1,723 @@
+---
+title: "bunseki"
+author: "sasakihirohumi"
+date: "2019年5月1日"
+output: html_document
+---
+
+##魚種構成に関するグラフを作成する
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##パッケージの読み込み
+```{r}
+rm(list = ls(all=TRUE))
+library(dplyr)
+library(sp)
+library(tidyr)
+library(tidyverse)
+library(ggplot2)          　
+library(gridExtra)　　#プロットのレイアウト
+library(geosphere)　　#2点間の距離を計算
+library(scales)       #棒グラフをパーセント表記にする
+```
+
+##操業データの入力
+```{r}
+#base_data
+data1<-read.csv("Data/Operation_Data/14Jun19_Operation_Data.2012_2018.sasaki.csv",                           stringsAsFactors=FALSE,header=T,na.strings="NULL")
+```
+
+##market_dataの入力
+```{r}
+#市況データ
+M_data1.ver1<-read.csv("Data/Market_Data/kesennuma_market_20090401_20180331.csv",
+                  fileEncoding="CP932",stringsAsFactors=FALSE,header=T,
+                  skip=1,na.strings="NULL")                          
+
+#魚種の英名セット
+English_Names <- read.csv("Data/Market_Data/10May18FishName_gaku_checked.csv",
+                          header=T,fileEncoding="CP932")
+```
+
+##market_data.ver2の入力
+```{r}
+#市況データ
+M_data1.ver2<-read.csv("Data/Market_Data/kesennuma_market_20180402_20181226.csv",
+                  fileEncoding="CP932",stringsAsFactors=FALSE,header=T,
+                  skip=1,na.strings="NULL")                          
+```
+
+##market_data.ver3の入力
+```{r}
+#市況データ
+M_data1.ver3<-read.csv("Data/Market_Data/kesennuma_market_20190101_20191231.csv",
+                  fileEncoding="CP932",stringsAsFactors=FALSE,header=T,
+                  na.strings="NULL")                          
+```
+
+
+##market_dataの結合
+```{r}
+#市況データの結合
+M_data1<-dplyr::bind_rows(M_data1.ver1,M_data1.ver2)
+M_data1<-dplyr::bind_rows(M_data1,M_data1.ver3)                    
+```
+
+##Fukuyo_8におけるmarket_data入力
+```{r}
+Fukuyo_data<-read.csv("Data/Market_Data/6May19.Fukuyo_8.market_data.csv",
+                      fileEncoding="CP932",stringsAsFactors=FALSE,
+                      header=T,na.strings="NULL")
+
+M_data1<- dplyr::bind_rows(M_data1,Fukuyo_data) #market_dataと結合
+```
+
+##漁船名セットの入力
+```{r}
+Vessel_Name_Match<-read.csv("Data/Market_Data/6May.19.Vessel_Name_Match.csv",
+                          fileEncoding="CP932",stringsAsFactors=FALSE,
+                          header=T,na.strings="NULL")
+```
+
+##数値型(操業データ）への変換
+```{r}
+#緯度列
+data1$Latitude <- as.numeric(data1$Latitude)
+#経度列
+data1$Longitude <- as.numeric(data1$Longitude)
+#操業列
+data1$Operation_Number <- as.numeric(data1$Operation_Number)
+#月データ列
+data1$Month_Operation <- as.numeric(data1$Month_Operation)
+```
+
+
+##市況データの加工
+##市況データと魚種名、船名セットを結合
+```{r}
+##  joint 
+#魚種名、船名の列形成
+M_data1 <- left_join(M_data1,English_Names,by=c("魚種名"="Species_NameJ"))
+M_data1 <- left_join(M_data1,Vessel_Name_Match,by="船名")
+```
+
+##データの抽出
+```{r}
+#年、船名、魚種名、漁獲量、漁獲高の列抽出
+M_data2<-M_data1[,c(1,55,51,36,37)]
+M_data2<-na.omit(M_data2)
+
+names(M_data2) <- c("Year","Vessel_Name","Fish_Names","Weight_kg",
+                    "Value_JPY")
+```
+
+##日付けデータの分割
+```{r}
+#年、月、日に分割
+M_data2<-M_data2 %>% 
+  separate(Year, into = c("Year_Landing", "Month_Landing",
+                          "Day_Landing"), sep = c(4,6)) 
+
+#数値型(操業データ）への変換
+M_data2$Month_Landing<-as.integer(M_data2$Month_Landing)
+M_data2$Day_Landing<-as.integer(M_data2$Day_Landing)
+M_data2$Year_Landing<-as.integer(M_data2$Year_Landing)
+```
+
+##データのグループ化と要約
+```{r}
+#漁獲量、漁獲高の要約
+M_data3<-M_data2 %>%
+  dplyr::group_by(Year_Landing,Month_Landing,
+                  Day_Landing,Vessel_Name,Fish_Names) %>%
+  dplyr::summarise(Weight_kg_sum = sum(Weight_kg),
+                   Value_JPY_sum = sum(Value_JPY))
+```
+
+##レイアウトの変形（漁獲量）
+```{r}
+#データの抽出（漁獲量、漁獲高別）
+M_data3_weight<-select(M_data3, -Value_JPY_sum)
+M_data3_value<-select(M_data3, -Weight_kg_sum)
+
+#行を列に展開
+M_data4_weight<-M_data3_weight %>%
+  tidyr::spread(Fish_Names, Weight_kg_sum)
+M_data4_weight[is.na(M_data4_weight)] <- 0 #NAを0に置換
+
+#漁獲量の合計を計算
+#合計列の形成
+M_data4_weight<-dplyr::mutate(M_data4_weight, Total_Weight = 
+Allbacore+	Big_Eye+	Big_Eye_Small+	Black_marlin+	Blue_Shark+	Bluefin+ Bull_Shark+	Cloudy_Catshark+	Dolphinfish+	Fin+	Indo_Pacific_blue_marlin+	Indo_Pacific_sailfish+	Japanese_Spanish_mackerel+	Longfin_mako_shark+	Milk_shark+	Ocean_sunfish_meat+	Opah+	Other_billfish+	Pacific_pomfret+	Salmon_shark+	Salmon_shark_hoshi+	Sea_bream+	Shortbill_spearfish+	Shortfin_Mako_Shark+	Skip_Jack+	Smooth_hammerhead+	Striped_Marlin+	Swordfish+	Swordfish_Small+	Thresher_shark+	Yellowfin+	Yellowtail_amberjack)
+
+
+#メカジキ、ヨシキリの合計に対する割合を算出
+M_data4_weight<-dplyr::mutate(M_data4_weight, Swordfish_weight_percent=
+                                Swordfish*100 / Total_Weight)
+M_data4_weight<-dplyr::mutate(M_data4_weight, Blue_Shark_weight_percent=
+                                Blue_Shark*100 / Total_Weight)
+#整数に四捨五入
+M_data4_weight[,c(37,38,39)] <-round(M_data4_weight[,c(37,38,39)],0)
+```
+
+##レイアウトの変形（漁獲高）
+```{r}
+#行を列に展開
+M_data4_value<-M_data3_value %>%
+  tidyr::spread(Fish_Names, Value_JPY_sum)
+M_data4_value[is.na(M_data4_value)] <- 0 #NAを0に置換
+
+#漁獲高の合計を計算
+#合計列の形成
+M_data4_value<-dplyr::mutate(M_data4_value, Total_Value = 
+Allbacore+	Big_Eye+	Big_Eye_Small+	Black_marlin+	Blue_Shark+	Bluefin+ Bull_Shark+	Cloudy_Catshark+	Dolphinfish+	Fin+	Indo_Pacific_blue_marlin+	Indo_Pacific_sailfish+	Japanese_Spanish_mackerel+	Longfin_mako_shark+	Milk_shark+	Ocean_sunfish_meat+	Opah+	Other_billfish+	Pacific_pomfret+	Salmon_shark+	Salmon_shark_hoshi+	Sea_bream+	Shortbill_spearfish+	Shortfin_Mako_Shark+	Skip_Jack+	Smooth_hammerhead+	Striped_Marlin+	Swordfish+	Swordfish_Small+	Thresher_shark+	Yellowfin+	Yellowtail_amberjack)
+
+#メカジキ、ヨシキリの合計に対する割合を算出
+M_data4_value<-dplyr::mutate(M_data4_value, Swordfish_value_percent=
+                                Swordfish*100 / Total_Value)
+M_data4_value<-dplyr::mutate(M_data4_value, Blue_Shark_value_percent=
+                                Blue_Shark*100 / Total_Value)
+#整数に四捨五入
+M_data4_value[,c(37,38,39)] <-round(M_data4_value[,c(37,38,39)],0)
+```
+
+#漁獲量、漁獲高データの結合
+```{r}
+#データの結合
+M_data5<-
+dplyr::full_join(M_data4_weight,M_data4_value , by = c("Year_Landing","Month_Landing",
+                  "Day_Landing","Vessel_Name"))
+```
+
+##平均価格を計算
+```{r}
+#平均価格を算出
+M_data5<-
+dplyr::mutate(M_data5,Average_price = Total_Value / Total_Weight) 
+
+#整数に四捨五入
+M_data5[,75] <-round(M_data5[,75],0)
+```
+
+##列名（魚種名）の変換
+```{r}
+#漁獲量
+M_data5<-dplyr::rename(M_data5,
+Swordfish_weight= Swordfish.x,
+Swordfish_Small_weight=	Swordfish_Small.x,
+Skip_Jack_weight=	Skip_Jack.x,
+Big_Eye_weight=	Big_Eye.x,
+Allbacore_weight=	Allbacore.x,
+Yellowfin_weight=	Yellowfin.x,
+Dolphinfish_weight=	Dolphinfish.x,
+Big_Eye_Small_weight=	Big_Eye_Small.x,
+Striped_Marlin_weight=	Striped_Marlin.x,
+Bluefin_weight=	Bluefin.x,
+Opah_weight=	Opah.x,
+Shortfin_Mako_Shark_weight=	Shortfin_Mako_Shark.x,
+Salmon_shark_weight=	Salmon_shark.x,
+Salmon_shark_hoshi_weight=	Salmon_shark_hoshi.x,
+Thresher_shark_weight=	Thresher_shark.x,
+Blue_Shark_weight=	Blue_Shark.x,
+Japanese_Spanish_mackerel_weight=	Japanese_Spanish_mackerel.x,
+Other_billfish_weight=	Other_billfish.x,
+Pacific_pomfret_weight=	Pacific_pomfret.x,
+Fin_weight=	Fin.x,
+Indo_Pacific_sailfish_weight=	Indo_Pacific_sailfish.x,
+Longfin_mako_shark_weight=	Longfin_mako_shark.x,
+Cloudy_Catshark_weight=	Cloudy_Catshark.x,
+Sea_bream_weight=	Sea_bream.x,
+Indo_Pacific_blue_marlin_weight= Indo_Pacific_blue_marlin.x,
+Shortbill_spearfish_weight=	Shortbill_spearfish.x,
+Smooth_hammerhead_weight=	Smooth_hammerhead.x,
+Black_marlin_weight=	Black_marlin.x,
+Yellowtail_amberjack_weight=	Yellowtail_amberjack.x,
+Milk_shark_weight=	Milk_shark.x,
+Bull_Shark_weight=	Bull_Shark.x,
+Ocean_sunfish_meat_weight=	Ocean_sunfish_meat.x,
+#漁獲高
+Swordfish_value=	Swordfish.y,
+Swordfish_Small_value=	Swordfish_Small.y,
+Skip_Jack_value=	Skip_Jack.y,
+Big_Eye_value=	Big_Eye.y,
+Allbacore_value=	Allbacore.y,
+Yellowfin_value=	Yellowfin.y,
+Dolphinfish_value=	Dolphinfish.y,
+Big_Eye_Small_value=	Big_Eye_Small.y,
+Striped_Marlin_value=	Striped_Marlin.y,
+Bluefin_value=	Bluefin.y,
+Opah_value=	Opah.y,
+Shortfin_Mako_Shark_value=	Shortfin_Mako_Shark.y,
+Salmon_shark_value=	Salmon_shark.y,
+Salmon_shark_hoshi_value=	Salmon_shark_hoshi.y,
+Thresher_shark_value=	Thresher_shark.y,
+Blue_Shark_value=	Blue_Shark.y,
+Japanese_Spanish_mackerel_value=	Japanese_Spanish_mackerel.y,
+Other_billfish_value=	Other_billfish.y,
+Pacific_pomfret_value=	Pacific_pomfret.y,
+Fin_value=	Fin.y,
+Indo_Pacific_sailfish_value=	Indo_Pacific_sailfish.y,
+Longfin_mako_shark_value=	Longfin_mako_shark.y,
+Cloudy_Catshark_value=	Cloudy_Catshark.y,
+Sea_bream_value=	Sea_bream.y,
+Indo_Pacific_blue_marlin_value=	Indo_Pacific_blue_marlin.y,
+Shortbill_spearfish_value=	Shortbill_spearfish.y,
+Smooth_hammerhead_value=	Smooth_hammerhead.y,
+Black_marlin_value=	Black_marlin.y,
+Yellowtail_amberjack_value=	Yellowtail_amberjack.y,
+Milk_shark_value=	Milk_shark.y,
+Bull_Shark_value=	Bull_Shark.y,
+Ocean_sunfish_meat_value=	Ocean_sunfish_meat.y)
+```
+
+##操業データと市場データの結合
+```{r}
+M_data6<-left_join(data1,M_data5,by=c("Vessel_Name","Year_Landing",
+                                      "Month_Landing","Day_Landing"))
+M_data6$Operation_Number <- as.numeric(M_data6$Operation_Number)
+
+M_data6<-M_data6[complete.cases(M_data6[ , 23:24]),]#指定列のNA削除
+```
+
+##操業データの抽出と月別の指定
+```{r}
+#1.2月
+data1.2<- subset(M_data6,Operation_Number>=1 & 
+                  Month_Operation>0 & Month_Operation<3)
+#3.4月
+data3.4 <- subset(M_data6,Operation_Number>=1 & 
+                  Month_Operation>2 & Month_Operation<5)
+#5.6月
+data5.6 <- subset(M_data6,Operation_Number>=1 & 
+                  Month_Operation>4 & Month_Operation<7)
+#7.8月
+data7.8 <- subset(M_data6,Operation_Number>=1 & 
+                  Month_Operation>6 & Month_Operation<9)
+#9.10.11月
+data9.10.11 <- subset(M_data6,Operation_Number>=1 & 
+                  Month_Operation>8 & Month_Operation<12)
+#12月
+data12 <- subset(M_data6,Operation_Number>=1 & 
+                  Month_Operation>11 & Month_Operation<13)
+```
+
+
+##階層的クラスター分析
+##緯度経度座標のデータフレーム作成
+```{r}
+xy1.2<-cbind(data1.2$Longitude,data1.2$Latitude)
+xy3.4<-cbind(data3.4$Longitude,data3.4$Latitude)
+xy5.6<-cbind(data5.6$Longitude,data5.6$Latitude)
+xy7.8<-cbind(data7.8$Longitude,data7.8$Latitude)
+xy9.10.11<-cbind(data9.10.11$Longitude,data9.10.11$Latitude)
+xy12<-cbind(data12$Longitude,data12$Latitude)
+```
+
+##気仙沼間の距離測定
+##気仙沼から200km以内の操業を除去
+```{r}
+kesennuma<-c(141.58 , 38.90)
+kesen_dis1<-distGeo(kesennuma,xy1.2)
+kesen_dis2<-distGeo(kesennuma,xy3.4)
+
+data1.2<-data1.2 %>%
+  mutate(kesen = kesen_dis1)
+data1.2 <- subset(data1.2,kesen > 200000) 
+
+data3.4<-data3.4 %>%
+  mutate(kesen = kesen_dis2)
+data3.4 <- subset(data3.4,kesen > 200000) 
+
+xy1.2<-cbind(data1.2$Longitude,data1.2$Latitude)
+xy3.4<-cbind(data3.4$Longitude,data3.4$Latitude)
+```
+
+##taiki_81を除去
+```{r}
+data5.6<-subset(data5.6,Vessel_Name != "Taiki_81")
+data7.8<-subset(data7.8,Vessel_Name != "Taiki_81")
+
+xy5.6<-cbind(data5.6$Longitude,data5.6$Latitude)
+xy7.8<-cbind(data7.8$Longitude,data7.8$Latitude)
+```
+
+##距離行列の生成（ユークリッド距離）
+```{r}
+dis1<-dist(xy1.2,method = "euclidean")
+dis2<-dist(xy3.4,method = "euclidean")
+dis3<-dist(xy5.6,method = "euclidean")
+dis4<-dist(xy7.8,method = "euclidean")
+dis5<-dist(xy9.10.11,method = "euclidean")
+dis6<-dist(xy12,method = "euclidean")
+```
+
+
+##階層的クラスター分析の手法
+```{r}
+#群平均法を適用
+cluster1<-hclust(dis1 ,method = "average", members = NULL)
+cluster2<-hclust(dis2 ,method = "average", members = NULL)
+cluster3<-hclust(dis3 ,method = "average", members = NULL)
+cluster4<-hclust(dis4 ,method = "average", members = NULL)
+cluster5<-hclust(dis5 ,method = "average", members = NULL)
+cluster6<-hclust(dis6 ,method = "average", members = NULL)
+```
+
+##各クラスター数（２，３，４）ごとに分割
+##月別データへ結合(data1.2)
+```{r}
+#クラスター２
+cut<-cutree(tree=cluster1,k=2)
+data1.2<-data1.2 %>%
+  mutate(cluster2 = cut)
+#クラスター3
+cut<-cutree(tree=cluster1,k=3)
+data1.2<-data1.2 %>%
+  mutate(cluster3 = cut)
+#クラスター4
+cut<-cutree(tree=cluster1,k=4)
+data1.2<-data1.2 %>%
+  mutate(cluster4 = cut)
+```
+
+##月別データへ結合(data3.4)
+```{r}
+#クラスター２
+cut<-cutree(tree=cluster2,k=2)
+data3.4<-data3.4 %>%
+  mutate(cluster2 = cut)
+#クラスター3
+cut<-cutree(tree=cluster2,k=3)
+data3.4<-data3.4 %>%
+  mutate(cluster3 = cut)
+#クラスター4
+cut<-cutree(tree=cluster2,k=4)
+data3.4<-data3.4 %>%
+  mutate(cluster4 = cut)
+```
+
+##月別データへ結合(data5.6)
+```{r}
+#クラスター２
+cut<-cutree(tree=cluster3,k=2)
+data5.6<-data5.6 %>%
+  mutate(cluster2 = cut)
+#クラスター3
+cut<-cutree(tree=cluster3,k=3)
+data5.6<-data5.6 %>%
+  mutate(cluster3 = cut)
+#クラスター4
+cut<-cutree(tree=cluster3,k=4)
+data5.6<-data5.6 %>%
+  mutate(cluster4 = cut)
+```
+
+##月別データへ結合(data7.8)
+```{r}
+#クラスター２
+cut<-cutree(tree=cluster4,k=2)
+data7.8<-data7.8 %>%
+  mutate(cluster2 = cut)
+#クラスター3
+cut<-cutree(tree=cluster4,k=3)
+data7.8<-data7.8 %>%
+  mutate(cluster3 = cut)
+#クラスター4
+cut<-cutree(tree=cluster4,k=4)
+data7.8<-data7.8 %>%
+  mutate(cluster4 = cut)
+```
+
+##月別データへ結合(data9.10.11)
+```{r}
+#クラスター２
+cut<-cutree(tree=cluster5,k=2)
+data9.10.11<-data9.10.11 %>%
+  mutate(cluster2 = cut)
+#クラスター3
+cut<-cutree(tree=cluster5,k=3)
+data9.10.11<-data9.10.11 %>%
+  mutate(cluster3 = cut)
+#クラスター4
+cut<-cutree(tree=cluster5,k=4)
+data9.10.11<-data9.10.11 %>%
+  mutate(cluster4 = cut)
+```
+
+##月別データへ結合(data12)
+```{r}
+#クラスター２
+cut<-cutree(tree=cluster6,k=2)
+data12<-data12 %>%
+  mutate(cluster2 = cut)
+#クラスター3
+cut<-cutree(tree=cluster6,k=3)
+data12<-data12 %>%
+  mutate(cluster3 = cut)
+#クラスター4
+cut<-cutree(tree=cluster6,k=4)
+data12<-data12 %>%
+  mutate(cluster4 = cut)
+```
+
+
+##非階層的クラスター分析
+##1.2月
+```{r}
+#非階層的クラスター分析
+#K-means法を適用
+km2 <- kmeans(xy1.2,2,nstart=10000)
+km3 <- kmeans(xy1.2,3,nstart=10000)
+km4 <- kmeans(xy1.2,4,nstart=10000)
+
+#月別データへ結合
+data1.2<-data1.2 %>%
+  mutate(B_cluster2 = km2$cluster)
+data1.2<-data1.2 %>%
+  mutate(B_cluster3 = km3$cluster)
+data1.2<-data1.2 %>%
+  mutate(B_cluster4 = km4$cluster)
+```
+
+##3.4月
+```{r}
+#非階層的クラスター分析
+#K-means法を適用
+km2 <- kmeans(xy3.4,2,nstart=10000)
+km3 <- kmeans(xy3.4,3,nstart=10000)
+km4 <- kmeans(xy3.4,4,nstart=10000)
+
+#月別データへ結合
+data3.4<-data3.4 %>%
+  mutate(B_cluster2 = km2$cluster)
+data3.4<-data3.4 %>%
+  mutate(B_cluster3 = km3$cluster)
+data3.4<-data3.4 %>%
+  mutate(B_cluster4 = km4$cluster)
+```
+
+##5.6月
+```{r}
+#非階層的クラスター分析
+#K-means法を適用
+km2 <- kmeans(xy5.6,2,nstart=10000)
+km3 <- kmeans(xy5.6,3,nstart=10000)
+km4 <- kmeans(xy5.6,4,nstart=10000)
+
+#月別データへ結合
+data5.6<-data5.6 %>%
+  mutate(B_cluster2 = km2$cluster)
+data5.6<-data5.6 %>%
+  mutate(B_cluster3 = km3$cluster)
+data5.6<-data5.6 %>%
+  mutate(B_cluster4 = km4$cluster)
+```
+
+##7.8月
+```{r}
+#非階層的クラスター分析
+#K-means法を適用
+km2 <- kmeans(xy7.8,2,nstart=10000)
+km3 <- kmeans(xy7.8,3,nstart=10000)
+km4 <- kmeans(xy7.8,4,nstart=10000)
+
+#月別データへ結合
+data7.8<-data7.8 %>%
+  mutate(B_cluster2 = km2$cluster)
+data7.8<-data7.8 %>%
+  mutate(B_cluster3 = km3$cluster)
+data7.8<-data7.8 %>%
+  mutate(B_cluster4 = km4$cluster)
+```
+
+##9.10.11月
+```{r}
+#非階層的クラスター分析
+#K-means法を適用
+km2 <- kmeans(xy9.10.11,2,nstart=10000)
+km3 <- kmeans(xy9.10.11,3,nstart=10000)
+km4 <- kmeans(xy9.10.11,4,nstart=10000)
+
+#月別データへ結合
+data9.10.11<-data9.10.11 %>%
+  mutate(B_cluster2 = km2$cluster)
+data9.10.11<-data9.10.11 %>%
+  mutate(B_cluster3 = km3$cluster)
+data9.10.11<-data9.10.11 %>%
+  mutate(B_cluster4 = km4$cluster)
+```
+
+##12月
+```{r}
+#非階層的クラスター分析
+#K-means法を適用
+km2 <- kmeans(xy12,2,nstart=10000)
+km3 <- kmeans(xy12,3,nstart=10000)
+km4 <- kmeans(xy12,4,nstart=10000)
+
+#月別データへ結合
+data12<-data12 %>%
+  mutate(B_cluster2 = km2$cluster)
+data12<-data12 %>%
+  mutate(B_cluster3 = km3$cluster)
+data12<-data12 %>%
+  mutate(B_cluster4 = km4$cluster)
+```
+
+
+##各クラスター数における漁獲量と漁獲高のヒストグラム作成
+###魚種構成データとクラスターデータを結合
+```{r}
+#1.2月の月別データからクラスター情報を抽出
+M_data8<-dplyr::select(data1.2,"Year_Landing","Month_Landing",                       "Day_Landing","Vessel_Name","cluster2","cluster3","cluster4",
+                       "B_cluster2","B_cluster3","B_cluster4")
+M_data8<-distinct(M_data8)#重複行の削除
+
+M_data3$Fish_Names2 <- factor(M_data3$Fish_Names,
+                      levels = c("Swordfish","Blue_Shark"))#魚種構成をグループ化
+
+#魚種構成データとクラスターデータを結合
+M_data9<-dplyr::left_join(M_data3,M_data8,by=c("Vessel_Name",
+                        "Year_Landing","Month_Landing","Day_Landing"))
+
+M_data9<-M_data9[complete.cases(M_data9[ , 9:14]),]#指定列のNA削除
+M_data9$Fish_Names2 <- as.character(M_data9$Fish_Names2)
+```
+
+##漁獲量と漁獲高の重複行をカウントし平均化
+```{r}
+#漁獲量・漁獲高の重複行をカウントし列生成
+M_data_count<-M_data9 %>% 
+  dplyr::group_by(Year_Landing,Month_Landing,
+                  Day_Landing,Vessel_Name,Fish_Names) %>%
+  dplyr::count(Weight_kg_sum,Value_JPY_sum)
+#カウント列を結合
+M_data9<-dplyr::left_join(M_data9,M_data_count,by=c("Vessel_Name",
+                   "Fish_Names","Year_Landing","Month_Landing",
+                   "Day_Landing","Weight_kg_sum","Value_JPY_sum"))
+
+M_data9<-M_data9 %>% #漁獲量と漁獲高の重複の平均化
+  dplyr::group_by(Year_Landing,Month_Landing,
+                  Day_Landing,Vessel_Name,Fish_Names) %>%
+  dplyr::mutate(Weight_kg_sum = Weight_kg_sum/n,
+                   Value_JPY_sum = Value_JPY_sum/n)
+
+
+#平均価格を算出
+M_data9<-dplyr::mutate(M_data9,
+                       Average_Price = Value_JPY_sum/Weight_kg_sum)
+#無限大値を削除
+M_data9<-dplyr::filter(M_data9, Average_Price!=Inf) 
+```
+
+##魚種構成の内訳を記入
+```{r}
+M_data9$Fish_Names2[is.na(M_data9$Fish_Names2)] <- "other"
+M_data9$Fish_Names2 <- factor(M_data9$Fish_Names2,
+                            levels = c("Swordfish","Blue_Shark","other"))
+```
+
+##1.2月のクラスター別の魚種構成（棒グラム）
+```{r}
+M_data9$cluster2 <- as.numeric(M_data9$cluster2)
+#クラスター数2で分類した漁獲量
+w <- ggplot(M_data9,aes(x = M_data9$cluster2, y = Weight_kg_sum/1000))
+w <- w + geom_bar(stat = "identity",aes(fill=Fish_Names2))
+w <- w + labs(x = "クラスター", y = "漁獲量(t)", 
+              title = "クラスター別の漁獲量魚種構成")+
+  theme(legend.position="none")
+w <- w + scale_x_continuous(breaks = seq(1,2, by = 1)) +
+  theme_gray (base_family = "HiraKakuPro-W3")
+
+#クラスター数2で分類した漁獲高
+v <- ggplot(M_data9,aes(x = M_data9$cluster2, 
+                        y = Value_JPY_sum/100000000))
+v <- v + geom_bar(stat = "identity",aes(fill=Fish_Names2))
+v <- v + labs(x = "クラスター", y = "漁獲高(億円)", 
+              title = "クラスター別の漁獲高魚種構成")+
+  theme(legend.position="none")
+v <- v + scale_x_continuous(breaks = seq(1,2, by = 1)) +
+  theme_gray (base_family = "HiraKakuPro-W3")
+grid.arrange(w,v,ncol = 2)
+```
+
+##1.2月のクラスター別の魚種構成（100％割合棒グラム）
+```{r}
+M_data9$cluster2 <- as.numeric(M_data9$cluster2)
+#クラスター数2で分類した漁獲量
+w <- ggplot(M_data9,aes(x = M_data9$cluster2, y = Weight_kg_sum/1000))
+w <- w + geom_bar(stat = "identity",aes(fill=Fish_Names2),
+                  position = "fill")
+w <- w + labs(x = "クラスター", y = "漁獲量(%)", 
+              title = "クラスター別の漁獲量魚種構成")+
+  scale_y_continuous(labels = percent)
+w <- w + scale_x_continuous(breaks = seq(1,4, by = 1)) +
+  theme_gray (base_family = "HiraKakuPro-W3")
+
+#クラスター数2で分類した漁獲高
+v <- ggplot(M_data9,aes(x = M_data9$cluster2, y = Value_JPY_sum/1000000))
+v <- v + geom_bar(stat = "identity",aes(fill=Fish_Names2),
+                  position = "fill")
+v <- v + labs(x = "クラスター", y = "漁獲高(%)", 
+              title = "クラスター別の漁獲高魚種構成")+
+  scale_y_continuous(labels = percent)
+v <- v + scale_x_continuous(breaks = seq(1,4, by = 1)) +
+  theme_gray (base_family = "HiraKakuPro-W3")
+grid.arrange(w,v,ncol = 2)
+```
+
+##1.2月におけるクラスター別の密度表記ヒストグラムと密度曲線(漁獲量)
+##x軸を対数軸で表記
+```{r}
+M_data9$cluster2 <- as.character(M_data9$cluster2)
+g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
+                         fill = cluster2))
+g <- g + geom_histogram(position = "identity", alpha = 0.8)#ヒストグラム
+#密度曲線,x軸を対数軸に変換 
+g <- g + geom_density(aes(color =cluster2, alpha = 0.2),show.legend=F)+                     　　　　scale_x_log10(breaks=10^(-3:2))
+g <- g + labs(x = "漁獲量(t)")+facet_grid(cluster2 ~ .)
+g <- g + theme_gray (base_family = "HiraKakuPro-W3")
+  
+plot(g)
+```
+
+##1.2月におけるクラスター別の頻度表記ヒストグラム（漁獲量）
+##y軸を対数軸で表記
+```{r}
+M_data9$cluster2 <- as.character(M_data9$cluster2)
+g <- ggplot(ungroup(M_data9), aes(x = Weight_kg_sum/1000,fill = cluster2))
+g <- g + geom_histogram(position = "identity", 
+     alpha = 0.5)+scale_y_continuous(trans = "log1p")#y軸を対数軸に変換
+g <- g +  labs(x = "漁獲量(t)") +theme_gray (base_family = "HiraKakuPro-W3")
+plot(g)
+```
+
+##1.2月におけるクラスター別の密度表記ヒストグラムと
+##密度曲線(漁獲量・漁獲高)
+```{r}
+M_data9$cluster2 <- as.character(M_data9$cluster2)
+#クラスター数2で分類した漁獲量
+g <- ggplot(M_data9, aes(x = Weight_kg_sum/1000,y = ..density..,
+                         fill = cluster2))
+g <- g + geom_histogram(position = "identity", alpha = 0.8)
+g <- g + geom_density(aes(color =cluster2, alpha = 0.2),
+                      show.legend = F)
+g <- g + labs(x = "漁獲量(t)")
+g <- g + theme_gray (base_family = "HiraKakuPro-W3")
+
+#クラスター数2で分類した漁獲高
+g2 <- ggplot(M_data9, aes(x = Value_JPY_sum/10000,y = ..density..,
+                         fill = cluster2))
+g2 <- g2 + geom_histogram(position = "identity", alpha = 0.8)
+g2 <- g2 + geom_density(aes(color =cluster2, alpha = 0.2),
+                      show.legend = F)
+g2 <- g2 + labs(x = "漁獲高(万円)")
+g2 <- g2 + theme_gray (base_family = "HiraKakuPro-W3")
+grid.arrange(g,g2,ncol = 1)
+```
+
+
+
+
