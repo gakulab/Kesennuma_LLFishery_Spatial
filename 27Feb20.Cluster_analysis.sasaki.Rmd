@@ -21,8 +21,6 @@ library(ggplot2)          　
 library(gridExtra)　　#プロットのレイアウト
 library(geosphere)　　#2点間の距離を計算
 library(scales)       #棒グラフをパーセント表記にする
-library(rstan)        #stanを使用
-library(brms)         #brmsを使用
 ```
 
 ##計算の高速化
