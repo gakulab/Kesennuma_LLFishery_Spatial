@@ -21,12 +21,7 @@ library(ggplot2)          　
 library(gridExtra)　　#プロットのレイアウト
 library(geosphere)　　#2点間の距離を計算
 library(scales)       #棒グラフをパーセント表記にする
-```
 
-##計算の高速化
-```{r}
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
 ```
 
 ##操業データの入力
