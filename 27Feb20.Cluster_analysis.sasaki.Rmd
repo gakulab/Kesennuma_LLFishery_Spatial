@@ -189,7 +189,8 @@ M_data4_value[,c(37,38,39)] <-round(M_data4_value[,c(37,38,39)],0)
 #データの結合
 M_data5<-
 dplyr::full_join(M_data4_weight,M_data4_value , by = c("Year_Landing","Month_Landing",
-                  "Day_Landing","Vessel_Name"))
+                  "Day_Landing","Vessel_Name"),
+                 suffix = c("_weight","_value"))
 ```
 
 ##平均価格を計算
@@ -202,76 +203,6 @@ dplyr::mutate(M_data5,Average_price = Total_Value / Total_Weight)
 M_data5[,75] <-round(M_data5[,75],0)
 ```
 
-##列名（魚種名）の変換
-```{r}
-#漁獲量
-M_data5<-dplyr::rename(M_data5,
-Swordfish_weight= Swordfish.x,
-Swordfish_Small_weight=	Swordfish_Small.x,
-Skip_Jack_weight=	Skip_Jack.x,
-Big_Eye_weight=	Big_Eye.x,
-Allbacore_weight=	Allbacore.x,
-Yellowfin_weight=	Yellowfin.x,
-Dolphinfish_weight=	Dolphinfish.x,
-Big_Eye_Small_weight=	Big_Eye_Small.x,
-Striped_Marlin_weight=	Striped_Marlin.x,
-Bluefin_weight=	Bluefin.x,
-Opah_weight=	Opah.x,
-Shortfin_Mako_Shark_weight=	Shortfin_Mako_Shark.x,
-Salmon_shark_weight=	Salmon_shark.x,
-Salmon_shark_hoshi_weight=	Salmon_shark_hoshi.x,
-Thresher_shark_weight=	Thresher_shark.x,
-Blue_Shark_weight=	Blue_Shark.x,
-Japanese_Spanish_mackerel_weight=	Japanese_Spanish_mackerel.x,
-Other_billfish_weight=	Other_billfish.x,
-Pacific_pomfret_weight=	Pacific_pomfret.x,
-Fin_weight=	Fin.x,
-Indo_Pacific_sailfish_weight=	Indo_Pacific_sailfish.x,
-Longfin_mako_shark_weight=	Longfin_mako_shark.x,
-Cloudy_Catshark_weight=	Cloudy_Catshark.x,
-Sea_bream_weight=	Sea_bream.x,
-Indo_Pacific_blue_marlin_weight= Indo_Pacific_blue_marlin.x,
-Shortbill_spearfish_weight=	Shortbill_spearfish.x,
-Smooth_hammerhead_weight=	Smooth_hammerhead.x,
-Black_marlin_weight=	Black_marlin.x,
-Yellowtail_amberjack_weight=	Yellowtail_amberjack.x,
-Milk_shark_weight=	Milk_shark.x,
-Bull_Shark_weight=	Bull_Shark.x,
-Ocean_sunfish_meat_weight=	Ocean_sunfish_meat.x,
-#漁獲高
-Swordfish_value=	Swordfish.y,
-Swordfish_Small_value=	Swordfish_Small.y,
-Skip_Jack_value=	Skip_Jack.y,
-Big_Eye_value=	Big_Eye.y,
-Allbacore_value=	Allbacore.y,
-Yellowfin_value=	Yellowfin.y,
-Dolphinfish_value=	Dolphinfish.y,
-Big_Eye_Small_value=	Big_Eye_Small.y,
-Striped_Marlin_value=	Striped_Marlin.y,
-Bluefin_value=	Bluefin.y,
-Opah_value=	Opah.y,
-Shortfin_Mako_Shark_value=	Shortfin_Mako_Shark.y,
-Salmon_shark_value=	Salmon_shark.y,
-Salmon_shark_hoshi_value=	Salmon_shark_hoshi.y,
-Thresher_shark_value=	Thresher_shark.y,
-Blue_Shark_value=	Blue_Shark.y,
-Japanese_Spanish_mackerel_value=	Japanese_Spanish_mackerel.y,
-Other_billfish_value=	Other_billfish.y,
-Pacific_pomfret_value=	Pacific_pomfret.y,
-Fin_value=	Fin.y,
-Indo_Pacific_sailfish_value=	Indo_Pacific_sailfish.y,
-Longfin_mako_shark_value=	Longfin_mako_shark.y,
-Cloudy_Catshark_value=	Cloudy_Catshark.y,
-Sea_bream_value=	Sea_bream.y,
-Indo_Pacific_blue_marlin_value=	Indo_Pacific_blue_marlin.y,
-Shortbill_spearfish_value=	Shortbill_spearfish.y,
-Smooth_hammerhead_value=	Smooth_hammerhead.y,
-Black_marlin_value=	Black_marlin.y,
-Yellowtail_amberjack_value=	Yellowtail_amberjack.y,
-Milk_shark_value=	Milk_shark.y,
-Bull_Shark_value=	Bull_Shark.y,
-Ocean_sunfish_meat_value=	Ocean_sunfish_meat.y)
-```
 
 ##操業データと市場データの結合
 ```{r}
